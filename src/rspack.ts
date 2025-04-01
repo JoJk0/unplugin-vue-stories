@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from './index'
+import { VueStories } from './index'
 
 /**
  * Rspack plugin
@@ -12,13 +12,13 @@ import { Starter } from './index'
  * @example
  * ```js
  * // rspack.config.js
- * import Starter from 'unplugin-starter/rspack'
+ * import VueStories from 'unplugin-vue-stories/rspack'
  *
  * default export {
- *  plugins: [Starter()],
+ *  plugins: [VueStories()],
  * }
  * ```
  */
-const rspack = Starter.rspack as typeof Starter.rspack
+const rspack = VueStories.rspack as typeof VueStories.rspack
 export default rspack
 export { rspack as 'module.exports' }

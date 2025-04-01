@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from './index'
+import { VueStories } from './index'
 
 /**
  * Webpack plugin
@@ -19,6 +19,6 @@ import { Starter } from './index'
  * }
  * ```
  */
-const webpack = Starter.webpack as typeof Starter.webpack
+const webpack = VueStories.webpack as typeof VueStories.webpack
 export default webpack
 export { webpack as 'module.exports' }

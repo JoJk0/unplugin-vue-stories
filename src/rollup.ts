@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from './index'
+import { VueStories } from './index'
 
 /**
  * Rollup plugin
@@ -12,13 +12,13 @@ import { Starter } from './index'
  * @example
  * ```ts
  * // rollup.config.js
- * import Starter from 'unplugin-starter/rollup'
+ * import VueStories from 'unplugin-vue-stories/rollup'
  *
  * export default {
- *   plugins: [Starter()],
+ *   plugins: [VueStories()],
  * }
  * ```
  */
-const rollup = Starter.rollup as typeof Starter.rollup
+const rollup = VueStories.rollup as typeof VueStories.rollup
 export default rollup
 export { rollup as 'module.exports' }

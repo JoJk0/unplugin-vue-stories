@@ -1,128 +1,156 @@
-# unplugin-starter [![npm](https://img.shields.io/npm/v/unplugin-starter.svg)](https://npmjs.com/package/unplugin-starter)
+# Super Vue Addon
 
-[![Unit Test](https://github.com/sxzz/unplugin-starter/actions/workflows/unit-test.yml/badge.svg)](https://github.com/sxzz/unplugin-starter/actions/workflows/unit-test.yml)
+This addon extends `storybook-vue-addon` with additional features.
 
-Starter template for [unplugin](https://github.com/unjs/unplugin).
+## Why?
 
-<!-- Remove Start -->
+Existing `storybook-vue-addon` is great, but it lacks some features that are essential workflows for many people. 
+The main goal of this addon is to have **everything** auto-generated from components and only define test cases (stories) inside stories file.
 
-## Template Usage
+## Features
 
-To use this template, clone it down using:
+### `<script setup>` component description
 
-```bash
-npx degit sxzz/unplugin-starter unplugin-my-plugin
+Insert JSDoc tag just under the `<script setup>` tag to describe the component.
+
+```vue
+<script lang="ts" setup>
+/**
+ * Displays a button.
+ * @param {string} label - The button label.
+ */
 ```
 
-And do a global replacement of `unplugin-starter` with your plugin name.
+###  `Models` section
 
-Then you can start developing your unplugin 🔥
+Using `defineModels` and `defineModel` alongside with JSDoc comments, will generate a `Models` section in the story.
 
-To run unit tests, run: `pnpm run test`.
-To release a new version, run: `pnpm run release`.
+### CSS Variables with controls
 
-<!-- Remove End -->
+Just add JSDoc comment over any CSS variable to define it as component CSS property (requires `@ljcl/storybook-addon-cssprops`)
 
-## Installation
-
-```bash
-npm i -D unplugin-starter
+```vue
+<style scoped>
+:root {
+  /**
+   * The width of the component.
+   * @syntax <length>
+   */
+  --my-component-width: 20em;
+}
 ```
 
-<details>
-<summary>Vite</summary><br>
+### Design link support 
 
-```ts
-// vite.config.ts
-import Starter from 'unplugin-starter/vite'
+Add `@<design>Id` tag to your component JSDoc block (requires `@storybook/addon-designs`). 
+Set `getUrl` in options to have IDs and URLs decoupled.
+  
+### Category support 
 
-export default defineConfig({
-  plugins: [Starter()],
+Add through `@category` tag in your component JSDoc block. It will namespace the stories.
+
+### Controls for props and parts of slots
+
+Destructure `args` from default slot props of `Stories` or `Story` and use `args[<your-slot-name>]` to control an aspect of a slot.
+
+Controllable props are available if `<Story>` has either a single child component, or one of child components is a component defined within story file either through `component` property in meta, or `component` prop in `<Stories>`.
+
+```vue
+<template>
+  <Stories
+    v-slot="{ args }"
+    title="Components/Modal"
+    :component="AppModal"
+  >
+    <Story title="Normal">
+      <AppModal v-bind="args">
+        <template #activator>
+          <AppButton>{{ args.activator }}</AppButton>
+        </template>
+```
+
+### Template reusability 
+
+Reuse templates via `createReusableTemplate` `@vueuse/core` function. 
+Anything inside `Stories` that is not a `Story` will be added to each story, respecting the original order.
+
+```html
+<Stories>
+  <DefineMyStory />
+  <Story name="A">
+    <MyComponent>
+  </Story>
+  <SomeOtherReusableTemplate />
+  <Story name="B">
+    <MyComponent>
+  </Story>
+</Stories>
+```
+
+Will be transformed into:
+
+```html
+<Stories>
+  <Story name="A">
+    <DefineMyStory />
+    <MyComponent>
+    <SomeOtherReusableTemplate />
+  </Story>
+  <Story name="B">
+    <SomeOtherReusableTemplate />
+    <DefineMyStory />
+    <MyComponent>
+  </Story>
+</Stories>
+```
+Full example:
+
+```vue
+<script lang="ts" setup>
+import { createReusableTemplate } from '@vueuse/core'
+
+const [DefineModalStory, ModalStory] = createReusableTemplate()
+</script>
+
+<template>
+  <Stories
+    v-slot="{ args }"
+    title="Components/ModalVue"
+    :component="AppModal"
+  >
+    <DefineModalStory v-slot="props">
+      <AppModal v-bind="{ ...props, ...args }">
+        <template #activator>
+          <AppButton>{{ args.activator }}</AppButton>
+        </template>
+        <b>Please note:</b> {{ args.default }}
+      </AppModal>
+    </DefineModalStory>
+
+    <Story title="Unchecked">
+      <ModalStory :is-open="false" />
+    </Story>
+
+    <Story title="Fullscreen">
+      <ModalStory full-screen />
+    </Story>
+```
+
+::: warning
+You can only pass data into the reusable template that do not require `<script setup>` context (e.g. refs, reactive properties, composables etc.)
+:::
+
+### `defineMeta` SFC macro
+
+Compiler macro to define metadata for the component. 
+Defined properties are deep-merged on top of the existing metadata.
+
+```vue
+<script setup>
+
+defineMeta({
+  parameters: {
+    chromatic: { delay: 500 },
+  }
 })
 ```
-
-<br></details>
-
-<details>
-<summary>Rollup</summary><br>
-
-```ts
-// rollup.config.js
-import Starter from 'unplugin-starter/rollup'
-
-export default {
-  plugins: [Starter()],
-}
-```
-
-<br></details>
-
-<details>
-<summary>Rolldown</summary><br>
-
-```ts
-// rolldown.config.js
-import Starter from 'unplugin-starter/rolldown'
-
-export default {
-  plugins: [Starter()],
-}
-```
-
-<br></details>
-
-<details>
-<summary>esbuild</summary><br>
-
-```ts
-import { build } from 'esbuild'
-import Starter from 'unplugin-starter/esbuild'
-
-build({
-  plugins: [Starter()],
-})
-```
-
-<br></details>
-
-<details>
-<summary>Webpack</summary><br>
-
-```js
-// webpack.config.js
-import Starter from 'unplugin-starter/webpack'
-
-export default {
-  /* ... */
-  plugins: [Starter()],
-}
-```
-
-<br></details>
-
-<details>
-<summary>Rspack</summary><br>
-
-```ts
-// rspack.config.js
-import Starter from 'unplugin-starter/rspack'
-
-export default {
-  /* ... */
-  plugins: [Starter()],
-}
-```
-
-<br></details>
-
-## Sponsors
-
-<p align="center">
-  <a href="https://cdn.jsdelivr.net/gh/sxzz/sponsors/sponsors.svg">
-    <img src='https://cdn.jsdelivr.net/gh/sxzz/sponsors/sponsors.svg'/>
-  </a>
-</p>
-
-## License
-
-[MIT](./LICENSE) License © 2025-PRESENT [三咲智子](https://github.com/sxzz)

@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from './index'
+import { VueStories } from './index'
 
 /**
  * Farm plugin
@@ -12,13 +12,13 @@ import { Starter } from './index'
  * @example
  * ```ts
  * // farm.config.js
- * import Starter from 'unplugin-starter/farm'
+ * import VueStories from 'unplugin-vue-stories/farm'
  *
  * export default {
- *   plugins: [Starter()],
+ *   plugins: [VueStories()],
  * }
  * ```
  */
-const farm = Starter.farm as typeof Starter.farm
+const farm = VueStories.farm as typeof VueStories.farm
 export default farm
 export { farm as 'module.exports' }

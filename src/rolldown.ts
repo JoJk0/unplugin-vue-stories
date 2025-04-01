@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from './index'
+import { VueStories } from './index'
 
 /**
  * Rolldown plugin
@@ -12,13 +12,13 @@ import { Starter } from './index'
  * @example
  * ```ts
  * // rolldown.config.js
- * import Starter from 'unplugin-starter/rolldown'
+ * import VueStories from 'unplugin-vue-stories/rolldown'
  *
  * export default {
- *   plugins: [Starter()],
+ *   plugins: [VueStories()],
  * }
  * ```
  */
-const rolldown = Starter.rolldown as typeof Starter.rolldown
+const rolldown = VueStories.rolldown as typeof VueStories.rolldown
 export default rolldown
 export { rolldown as 'module.exports' }

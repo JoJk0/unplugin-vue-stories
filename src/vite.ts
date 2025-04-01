@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from './index'
+import { VueStories } from './index'
 
 /**
  * Vite plugin
@@ -12,13 +12,13 @@ import { Starter } from './index'
  * @example
  * ```ts
  * // vite.config.ts
- * import Starter from 'unplugin-starter/vite'
+ * import VueStories from 'unplugin-vue-stories/vite'
  *
  * export default defineConfig({
- *   plugins: [Starter()],
+ *   plugins: [VueStories()],
  * })
  * ```
  */
-const vite = Starter.vite as typeof Starter.vite
+const vite = VueStories.vite as typeof VueStories.vite
 export default vite
 export { vite as 'module.exports' }
