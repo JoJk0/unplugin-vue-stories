@@ -8,6 +8,8 @@
     "cssprops",
     "ljcl",
     "Nuxt",
-    "Unplugin"
-  ]
+    "Unplugin",
+    "vueuse"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

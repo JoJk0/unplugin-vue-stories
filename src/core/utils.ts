@@ -24,3 +24,14 @@ export function findLastIndex<T>(
   }
   return -1
 }
+
+/**
+ * Extracts lines out of a block of text regardless of platform-specific line endings
+ * @param block the block of text
+ * @returns the lines of text
+ */
+export function toLines(block: string): string[] {
+  return (
+    block.split('\r\n')[0] === block ? block.split('\n') : block.split('\r\n')
+  ).map((line) => line.trim())
+}

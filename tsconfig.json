@@ -5,8 +5,12 @@
     "moduleDetection": "force",
     "module": "preserve",
     "moduleResolution": "bundler",
+    "paths": {
+      "~/*": ["./src/*"],
+      "~playground/*": ["./playground/*"]
+    },
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "strict": true,
     "noUnusedLocals": true,
     "declaration": true,

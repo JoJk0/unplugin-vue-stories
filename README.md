@@ -1,6 +1,6 @@
-# Super Vue Addon
+# `unplugin-vue-stories`
 
-This addon extends `storybook-vue-addon` with additional features.
+Write Storybook stories in Vue SFC format.
 
 ## Why?
 
@@ -17,7 +17,6 @@ Insert JSDoc tag just under the `<script setup>` tag to describe the component.
 <script lang="ts" setup>
 /**
  * Displays a button.
- * @param {string} label - The button label.
  */
 ```
 
@@ -153,4 +152,21 @@ defineMeta({
     chromatic: { delay: 500 },
   }
 })
+```
+
+### Component previews
+
+Add `?preview` suffix to the story import to get the default story should you need it for external documentation
+
+```vue
+<script setup lang="ts">
+import CounterPreview from './Counter.stories.vue?preview'
+</script>
+
+<template>
+  <section>
+    <h1>Preview Example</h1>
+    <CounterPreview />
+  </section>
+</template>
 ```

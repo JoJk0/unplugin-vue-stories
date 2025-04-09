@@ -36,8 +36,8 @@ import {
   type SFCScriptBlock,
 } from 'vue/compiler-sfc'
 import { parse } from './parser'
-import { transformSuperMeta } from './super-meta'
 import { toCamelCase } from './utils'
+import type { Options } from './options'
 import type { ParsedMeta, ParsedStory } from './types'
 import type { ParserPlugin } from '@babel/parser'
 import type { BindingMetadata, ElementNode } from '@vue/compiler-core'
@@ -47,11 +47,13 @@ export async function transformSuperVue({
   id,
   additionalMeta,
   scriptBindings,
+  options,
 }: {
   stories: string
   id: string
   additionalMeta?: string
   scriptBindings: BindingMetadata | undefined
+  options?: Options
 }): Promise<string | CodeTransform | undefined> {
   if (!stories) return stories
 
@@ -59,7 +61,7 @@ export async function transformSuperVue({
 
   const s = new MagicStringAST(stories)
 
-  transformMeta({ ast, s, additionalMeta })
+  transformMeta({ ast, s, additionalMeta, options })
 
   // Change the import createBlock -> createVNode, createElementBlock -> createElementVNode
   const vueImport = ast.body.find(
@@ -185,10 +187,12 @@ function transformMeta({
   ast,
   s,
   additionalMeta,
+  options,
 }: {
   ast: ReturnType<typeof babelParse>
   s: MagicStringAST
   additionalMeta?: string
+  options?: Options
 }) {
   const meta = ast.body.find((node) => node.type === 'ExportDefaultDeclaration')
 
@@ -223,20 +227,24 @@ function transformMeta({
   const slotsArgTypes = `{ argTypes: ${componentExportName}.__docgenInfo.slots?.reduce((acc, { name }) => ({ ...acc, [name]: { control: 'text', type: 'VNode[]' } }), {}) },`
   const removeTrashArgTypes = `{ argTypes: { $: { table: { disable: true } }, $slots: { table: { disable: true } } } },`
 
+  const design = options?.design
+    ? `design: { type: '${options?.design.type}', url: ${componentExportName}.__meta.${options?.design.type}Url },`
+    : ``
+
   const params = `
-    docs: { description: { component: ${componentExportName}.description } },
-    design: { type: '${designType}', url: ${componentExportName}.getUrl(${componentExportName}.designId)} },
-    cssprops: ${componentExportName}.cssVars?.reduce((acc, { key, value, type, description }) => ({
+    docs: { description: { component: ${componentExportName}.__meta.description } },
+    ${design}
+    cssprops: ${componentExportName}.__meta.cssVars?.reduce((acc, { key, value, type, description }) => ({
             ...acc,
             [key.slice(2)]: { value, type, description, control: "text" },
           }), {}),
     `
 
   // TODO: Make Experimental Indexers of `storybook-vue-addon` (not this vite plugin) pick category from component
-  // const category = `\`\${${componentExportName}.category ?? ''}/${(title.value as StringLiteral).value}\``
+  // const category = `\`\${${componentExportName}.__meta.category ?? ''}/${(title.value as StringLiteral).value}\``
 
   s.prependLeft(0, `import deepmerge from 'deepmerge';\n`)
-  s.append(`console.log(${componentExportName})\n`)
+  s.prepend(`console.log(${componentExportName})\n`)
   s.prependLeft(meta.start! + 15, `deepmerge.all([`)
   s.prependLeft(
     meta.end! - 1,
@@ -626,11 +634,8 @@ export function transformExtraTemplates(
 export async function transform(
   code: string,
   id: string,
+  options?: Options,
 ): Promise<string | CodeTransform | undefined> {
-  if (id.endsWith('.vue')) {
-    return transformSuperMeta(code, id)
-  }
-
   const {
     meta: additionalMeta,
     trimmedCode,
@@ -663,6 +668,7 @@ export async function transform(
     id,
     additionalMeta,
     scriptBindings,
+    options,
   })
 }
 

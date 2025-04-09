@@ -1,8 +1,8 @@
 {
-  "name": "unplugin-starter",
+  "name": "unplugin-vue-stories",
   "version": "0.0.0",
   "packageManager": "pnpm@10.6.5",
-  "description": "Description.",
+  "description": "Vue SFC stories for Storybook",
   "type": "module",
   "keywords": [
     "unplugin",
@@ -12,19 +12,27 @@
     "rollup",
     "rolldown",
     "esbuild",
-    "farm"
+    "farm",
+    "vue",
+    "storybook",
+    "vue3"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/sxzz/unplugin-starter#readme",
+  "bundler": {
+    "exportEntries": [
+      "src/storybook.ts"
+    ]
+  },
+  "homepage": "https://github.com/jojk0/unplugin-vue-stories#readme",
   "bugs": {
-    "url": "https://github.com/sxzz/unplugin-starter/issues"
+    "url": "https://github.com/jojk0/unplugin-vue-stories/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sxzz/unplugin-starter.git"
+    "url": "git+https://github.com/jojk0/unplugin-vue-stories.git"
   },
-  "author": "三咲智子 Kevin Deng <sxzz@sxzz.moe>",
-  "funding": "https://github.com/sponsors/sxzz",
+  "author": "Jakub Janisz <jacob@jojko.tech>",
+  "funding": "https://github.com/sponsors/jojk0",
   "files": [
     "dist"
   ],
@@ -38,6 +46,7 @@
     "./rspack": "./dist/rspack.js",
     "./rollup": "./dist/rollup.js",
     "./rolldown": "./dist/rolldown.js",
+    "./storybook": "./dist/storybook.js",
     "./esbuild": "./dist/esbuild.js",
     "./farm": "./dist/farm.js",
     "./api": "./dist/api.js",
@@ -66,11 +75,18 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
+    "vite": "^6.2.2",
     "vue": "^3.5.13"
   },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "vue": {
+      "optional": false
+    }
+  },
   "dependencies": {
-    "@vue/compiler-core": "^3.5.13",
-    "prettier-plugin-organize-imports": "^4.1.0",
     "unplugin": "^2.2.2",
     "unplugin-utils": "^0.2.4"
   },
@@ -80,6 +96,7 @@
     "@ljcl/storybook-addon-cssprops": "^4.0.0",
     "@nuxt/kit": "^3.16.2",
     "@nuxt/schema": "^3.16.2",
+    "@storybook/addon-designs": "^8.2.1",
     "@storybook/addon-essentials": "^8.6.11",
     "@storybook/blocks": "^8.6.11",
     "@storybook/csf": "^0.1.13",
@@ -94,23 +111,39 @@
     "@types/react": "^19.0.12",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue-macros/common": "3.0.0-beta.7",
+    "@vue/compiler-core": "^3.5.13",
+    "@vueuse/core": "^13.1.0",
     "bumpp": "^10.1.0",
     "consola": "^3.4.2",
     "deepmerge": "^4.3.1",
     "eslint": "^9.23.0",
     "prettier": "^3.5.3",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "react": "^19.1.0",
-    "recast": "^0.23.11",
     "storybook": "^8.6.11",
     "tsdown": "^0.6.9",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vite": "^6.2.2",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-component-meta": "^2.2.8"
   },
   "engines": {
     "node": ">=18.12.0"
+  },
+  "storybook": {
+    "displayName": "Vue Stories",
+    "supportedFrameworks": [
+      "vue3"
+    ],
+    "icon": "https://api.iconify.design/logos/vue.svg"
+  },
+  "auto": {
+    "plugins": [
+      "npm"
+    ]
   },
   "prettier": "@sxzz/prettier-config"
 }

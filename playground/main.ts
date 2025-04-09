@@ -13,7 +13,18 @@ const config: StorybookConfig = {
   },
   addons: [
     '@storybook/addon-essentials',
-    '../src/storybook',
+    '@storybook/addon-designs',
+    {
+      name: '../src/storybook',
+      options: {
+        design: {
+          type: 'figma',
+          getUrl: (id: string) =>
+            `https://www.figma.com/file/1234567890?nodeId=${id}`,
+        },
+        include: ['playground/**/*.vue'],
+      },
+    },
     '@ljcl/storybook-addon-cssprops',
   ],
 }
