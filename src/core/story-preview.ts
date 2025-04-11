@@ -75,7 +75,9 @@ const attachArgsToTemplate = defineHandler(
       ).properties.find(
         (property): property is ObjectProperty =>
           ((property as ObjectProperty).key as Identifier)?.name === 'args',
-      )?.value as ObjectExpression
+      )?.value as ObjectExpression | undefined
+
+      if (!argsAst) return
 
       const args = metaCode.slice(argsAst.start!, argsAst.end!)
 
