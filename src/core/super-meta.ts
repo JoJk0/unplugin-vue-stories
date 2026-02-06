@@ -1,15 +1,10 @@
 import { basename } from 'node:path'
-import {
-  generateTransform,
-  MagicStringAST,
-  parseSFC,
-  type CodeTransform,
-} from '@vue-macros/common'
+import { parseSFC, type CodeTransform } from '@vue-macros/common'
 
 import { findLastIndex, pascalToKebabCase, toLines } from './utils'
 import type { OptionsResolved } from './options'
 import type { CssVarMeta } from './types'
-import type { ComponentMeta, EventMeta, PropertyMeta } from 'vue-component-meta'
+import type { ComponentMeta, EventMeta, PropertyMeta, SlotMeta, } from 'vue-component-meta'
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 
 /**
@@ -28,74 +23,52 @@ export function transform(
   ) => ComponentMeta,
   options?: OptionsResolved,
 ): CodeTransform | undefined {
-  if (id.endsWith('.vue')) {
-    const sfc = parseSFC(code, id)
+  const sfc = parseSFC(code, id)
 
-    const componentMeta = getComponentMeta(id)
+  const componentMeta = pruneSchema(getComponentMeta(id))
 
-    const { props, events, models } = parseModels(
-      componentMeta.props,
-      componentMeta.events,
-    )
+  const { props, events, models } = parseModels(
+    componentMeta.props,
+    componentMeta.events,
+  )
 
-    if (!sfc.scriptSetup) return
+  const { getSetupAst, getScriptAst, styles } = sfc
 
-    const { scriptSetup, getSetupAst, styles } = sfc
-    const setupOffset = scriptSetup.loc.start.offset
-    const setupAst = getSetupAst()!
+  const setupAst = getSetupAst()
 
-    const comment = setupAst.body?.[0]?.leadingComments?.[0].value
+  const scriptAst = getScriptAst()
 
-    const description = extractDescription(comment ?? '')
-    const tags = extractTags(comment ?? '')
+  if (!setupAst && !scriptAst) return
 
-    const componentName = basename(id.replace('.vue', ''))
+  const comment = (setupAst ?? scriptAst)!.body?.[0]?.leadingComments?.[0].value
 
-    const cssVars = extractCssVars(styles, componentName)
+  const description = extractDescription(comment ?? '')
+  const tags = extractTags(comment ?? '')
 
-    const designId = options?.design
-      ? tags[`${options?.design?.type}Id`]?.[0]?.description
-      : undefined
+  const componentName = basename(id.replace('.vue', ''))
 
-    const data = {
-      __meta: {
-        slots: componentMeta.slots,
-        props,
-        events,
-        models,
-        description,
-        [`${options?.design?.type}Url`]: options?.design
-          ? options.design.getUrl(designId!)
-          : undefined,
-        category: tags.category?.[0]?.description,
-        cssVars,
-      },
-    }
+  const cssVars = extractCssVars(styles, componentName)
 
-    const s = new MagicStringAST(code, { offset: setupOffset })
+  const designId = options?.design
+    ? tags[`${options?.design?.type}Id`]?.[0]?.description
+    : undefined
 
-    const defineOptionsBlock = setupAst.body?.find((node) => {
-      return (
-        node.type === 'ExpressionStatement' &&
-        node.expression?.type === 'CallExpression' &&
-        node.expression.callee.type === 'Identifier' &&
-        node.expression.callee.name === 'defineOptions'
-      )
-    })
+  const filterDeprecated = (prop: PropertyMeta | EventMeta | SlotMeta) =>
+    !prop.tags.some((tag) => tag.name === 'deprecated')
 
-    if (defineOptionsBlock) {
-      s.prependRight(
-        defineOptionsBlock.end! - 2,
-        `, \n${JSON.stringify(data).slice(1, -1)},\n`,
-      )
-    } else {
-      s.prependLeft(0, `defineOptions(${JSON.stringify(data)})\n`)
-    }
-
-    const t = generateTransform(s, id)
-
-    return t
+  const data = {
+    slots: componentMeta.slots.filter(filterDeprecated),
+    props: props.filter(filterDeprecated),
+    events: events.filter(filterDeprecated),
+    models: models.filter(filterDeprecated),
+    description,
+    [`${options?.design?.type}Url`]:
+      options?.design && designId ? options.design.getUrl(designId) : undefined,
+    category: tags.category?.[0]?.description,
+    cssVars,
   }
+
+  return { code: `export default ${JSON.stringify(data)}`, map: null }
 }
 
 /**
@@ -107,13 +80,14 @@ export function extractCssVars(
   style: SFCStyleBlock[],
   componentName: string,
 ): CssVarMeta[] | undefined {
+  // TODO: use postcss / preprocessor to extract the CSS variables instead of regex, since this is not very robust and can easily break on edge cases (e.g. multiline CSS variables, comments, etc.)
   const kebabName = pascalToKebabCase(componentName)
 
   const block = style.find((block) => block.type === 'style')
+
   if (!block) return
 
   const blockLines = toLines(block.content)
-
   const cssVars = blockLines.reduce((acc, line, index) => {
     if (
       (line.startsWith(`--${kebabName}-`) ||
@@ -253,7 +227,20 @@ export function parseModels(
   events: EventMeta[]
   models: PropertyMeta[]
 } {
-  const excludeProps = ['key', 'ref', 'ref_for', 'ref_key', 'class', 'style']
+  const excludeProps = [
+    'key',
+    'ref',
+    'ref_for',
+    'ref_key',
+    'class',
+    'style',
+    'onVue:beforeMount',
+    'onVue:mounted',
+    'onVue:beforeUpdate',
+    'onVue:updated',
+    'onVue:beforeUnmount',
+    'onVue:unmounted',
+  ]
 
   const models = props.filter((prop) =>
     events.find((event) => event.name === `update:${prop.name}`),
@@ -268,4 +255,30 @@ export function parseModels(
     events: events.filter(({ name }) => !name.startsWith('update:')),
     models,
   }
+}
+
+/**
+ * Prunes the component meta schema to only include the relevant properties
+ * Due to out of memory issues, we only include the properties that are used.
+ */
+export function pruneSchema(meta: ComponentMeta): ComponentMeta {
+  const keys = ['props', 'exposed'] as const
+  keys.forEach((key) => {
+    meta[key].forEach((value) => {
+      if (typeof value.schema !== 'object') return
+
+      // we need to use Object.defineProperty here since schema is a getter so we can not set it directly
+      Object.defineProperty(value, 'schema', {
+        configurable: true,
+        enumerable: true,
+        value: {
+          kind: value.schema.kind,
+          type: value.schema.type,
+          // note that value.schema.schema is not included here (see comment above)
+        },
+      })
+    })
+  })
+
+  return meta
 }

@@ -156,7 +156,7 @@ defineMeta({
 
 ### Component previews
 
-Add `?preview` suffix to the story import to get the default story should you need it for external documentation
+Add `?preview` suffix to the story import to get the default story should you need it for external documentation. It picks the **first** (default) story in your stories file as the preview. It can be used for example code snippets and they are formatted and linted with your project tools.
 
 ```vue
 <script setup lang="ts">
@@ -167,6 +167,49 @@ import CounterPreview from './Counter.stories.vue?preview'
   <section>
     <h1>Preview Example</h1>
     <CounterPreview />
+    <!-- or output formatted and linted source as example -->
+    <code>
+      <pre>{{ CounterPreview }}</pre> 
+    </code>
   </section>
 </template>
 ```
+
+### Configuration
+
+- lint
+- format
+- remove unused vars
+- remove unused imports
+- remove unused selectors
+
+### API
+
+#### `<Stories>` Component
+
+`title`
+`component`
+`description` - alias of `parameters.docs.description.component` (only works if @storybook/addon-docs is active)
+...meta - any other Storybook meta property for overriding applied to all stories (will override anything inside `defineMeta`)
+
+#### `<Story>` Component
+
+`title`
+`description` - alias of `parameters.docs.description.story` (only works if @storybook/addon-docs is active)
+`component` - override component for this story only
+`inheritArgs` - whether to inherit args from `<Stories>` component into root child component (default: true (if single-root) / false (if multiple roots))
+...meta - any other Storybook story meta property for overriding
+
+#### `defineMeta` SFC macro
+
+`description` - alias of `parameters.docs.description.component` (only works if @storybook/addon-docs is active)
+...meta - any Storybook meta property for overriding applied to all stories
+
+#### `ComponentMeta` interface
+
+Component meta from `vue-component-meta`
+
+faq
+
+- auto imports: must add the `?preview` and `?vue&type=stories` file to the `include` option of `unplugin-auto-import` plugin
+ config

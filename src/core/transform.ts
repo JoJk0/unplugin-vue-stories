@@ -228,20 +228,20 @@ function transformMeta({
   const removeTrashArgTypes = `{ argTypes: { $: { table: { disable: true } }, $slots: { table: { disable: true } } } },`
 
   const design = options?.design
-    ? `design: { type: '${options?.design.type}', url: ${componentExportName}.__meta.${options?.design.type}Url },`
+    ? `design: { type: '${options?.design.type}', url: ${componentExportName}.__meta?.${options?.design.type}Url },`
     : ``
 
   const params = `
-    docs: { description: { component: ${componentExportName}.__meta.description } },
+    docs: { description: { component: ${componentExportName}.__meta?.description } },
     ${design}
-    cssprops: ${componentExportName}.__meta.cssVars?.reduce((acc, { key, value, type, description }) => ({
+    cssprops: ${componentExportName}.__meta?.cssVars?.reduce((acc, { key, value, type, description }) => ({
             ...acc,
             [key.slice(2)]: { value, type, description, control: "text" },
           }), {}),
     `
 
   // TODO: Make Experimental Indexers of `storybook-vue-addon` (not this vite plugin) pick category from component
-  // const category = `\`\${${componentExportName}.__meta.category ?? ''}/${(title.value as StringLiteral).value}\``
+  // const category = `\`\${${componentExportName}.__meta?.category ?? ''}/${(title.value as StringLiteral).value}\``
 
   s.prependLeft(0, `import deepmerge from 'deepmerge';\n`)
   s.prepend(`console.log(${componentExportName})\n`)
@@ -636,6 +636,7 @@ export async function transform(
   id: string,
   options?: Options,
 ): Promise<string | CodeTransform | undefined> {
+  // console.log('transforming', id)
   const {
     meta: additionalMeta,
     trimmedCode,

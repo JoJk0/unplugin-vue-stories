@@ -1,15 +1,12 @@
-import { readFileSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { cwd } from 'node:process'
-import { readConfigFile } from 'typescript'
 import {
   createUnplugin,
   type UnpluginInstance,
   type UnpluginOptions,
 } from 'unplugin'
-import { createFilter, toArray } from 'unplugin-utils'
 import { createChecker } from 'vue-component-meta'
-import { logger } from './core/logger'
 import { resolveOptions, type Options } from './core/options'
 
 import { transform as transformStoryPreview } from './core/story-preview'
@@ -23,6 +20,7 @@ export { transform as transformVueStories } from './core/transform'
 export const STORIES_INTERNAL_SUFFIX = '?vue&type=stories'
 export const STORIES_PUBLIC_SUFFIX = '.stories.vue'
 export const STORIES_PREVIEW_PUBLIC_SUFFIX: '.stories.vue?preview' = `${STORIES_PUBLIC_SUFFIX}?preview`
+export const STORIES_META_PUBLIC_SUFFIX = `.vue?meta`
 
 const resolveVueStoriesId: (
   publicSuffix: string,
@@ -44,7 +42,7 @@ const resolveVueStoriesId: (
       // We append a custom "type" so that the vue plugin is not handling the import
       resolution.id = setId(resolution.id)
 
-      logger.debug(`Resolving ${source} to ${resolution.id}`)
+      // logger.debug(`Resolving ${source} to ${resolution.id}`)
       return resolution
     }
   }
@@ -57,14 +55,14 @@ export const VueStories: UnpluginInstance<Options | undefined, true> =
 
     const tsconfigPath = join(dirname, options.tsconfigPath)
 
-    const { config: tsConfig } = readConfigFile(tsconfigPath, (path) =>
-      readFileSync(path, 'utf-8'),
-    )
+    // const { config: tsConfig } = readConfigFile(tsconfigPath, (path) =>
+    //   readFileSync(path, 'utf-8'),
+    // )
 
-    const filter = createFilter(
-      [...toArray(options.include), ...(tsConfig.include ?? [])],
-      [...toArray(options.exclude), ...(tsConfig.exclude ?? [])],
-    )
+    // const filter = createFilter(
+    //   [...toArray(options.include), ...(tsConfig.include ?? [])],
+    //   [...toArray(options.exclude), ...(tsConfig.exclude ?? [])],
+    // )
 
     const { getComponentMeta } = createChecker(tsconfigPath)
 
@@ -75,9 +73,20 @@ export const VueStories: UnpluginInstance<Options | undefined, true> =
         /** Extracts extra component metadata to the component object */
         name: `${name}:meta`,
         enforce: options.enforce,
-        transformInclude: (id) => id.endsWith('.vue') && filter(id),
-        transform(code, id) {
-          return transformSuperMeta(code, id, getComponentMeta, options)
+        resolveId: resolveVueStoriesId(
+          STORIES_META_PUBLIC_SUFFIX,
+          (id) => `\0${id}`,
+        ),
+        load: async (id) => {
+          if (!id.endsWith(STORIES_META_PUBLIC_SUFFIX)) return
+
+          const fileId = id.replace(/^\0/, '').replace(/\?meta$/, '')
+
+          const code = await readFile(fileId, {
+            encoding: 'utf-8',
+          })
+
+          return transformSuperMeta(code, fileId, getComponentMeta, options)
         },
       },
       {
@@ -85,7 +94,7 @@ export const VueStories: UnpluginInstance<Options | undefined, true> =
         name: `${name}:preview`,
         enforce: options.enforce,
         transformInclude: (id) => id.endsWith(STORIES_PREVIEW_PUBLIC_SUFFIX),
-        transform: (code, id) => transformStoryPreview(code, id),
+        transform: transformStoryPreview,
       },
       {
         /** Transforms Vue SFC stories into Storybook CSF format */

@@ -72,10 +72,13 @@ defineOptions({ inheritAttrs: false })
 
 <template>
   <div class="counter">
-    <h1><slot name="title" prop1="Ipsum">Counter</slot></h1>
+    <h1>
+      <slot name="title" prop1="Ipsum">Counter</slot>
+    </h1>
     <div class="content">
       <button class="btn" @click="inc">+</button>
-      {{ modelValue }}<slot prop1="Lorem" />
+      {{ modelValue }}
+      <slot prop1="Lorem" />
       <button class="btn" @click="dec">-</button>
     </div>
   </div>
@@ -100,6 +103,7 @@ defineOptions({ inheritAttrs: false })
   gap: 0.5em;
   font-family: sans-serif;
   text-align: center;
+
   .content {
     display: flex;
     gap: 0.5em;
@@ -114,9 +118,11 @@ defineOptions({ inheritAttrs: false })
     font-size: inherit;
     background: var(--counter-color, var(--default-counter-color));
     border: 0;
+
     &:hover {
       opacity: 0.7;
     }
+
     &:active {
       opacity: 0.6;
     }

@@ -18,11 +18,13 @@ const _default_1: UserConfig = defineConfig({
       async load(id) {
         if (id.includes('@preview-test')) {
           const component = await readFile(
-            './playground/Counter.stories.vue',
+            './playground/AccordionGroup.stories.vue',
             'utf-8',
           )
           return `export default {
-            code: \`${transformStoryPreview(component, id)?.code}\`,
+            code: \`${(await transformStoryPreview(component, id))?.code.replaceAll('\\', '\\\\')
+        .replaceAll('`', '\\`')
+        .replaceAll('${', '\\${')}\`,
           }`
         }
       },

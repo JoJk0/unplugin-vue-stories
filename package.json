@@ -66,8 +66,10 @@
   "scripts": {
     "lint": "eslint --cache .",
     "lint:fix": "pnpm run lint --fix",
+    "storybook": "storybook dev -p 6008 -c playground --no-open",
     "play": "storybook dev -p 6008 -c playground --no-open",
     "build": "tsdown",
+    "storybook:build": "storybook build -c playground",
     "dev": "tsdown --watch",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
@@ -75,10 +77,14 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
+    "@nuxt/kit": "^3.16.2",
     "vite": "^6.2.2",
     "vue": "^3.5.13"
   },
   "peerDependenciesMeta": {
+    "@nuxt/kit": {
+      "optional": true
+    },
     "vite": {
       "optional": true
     },
@@ -87,6 +93,7 @@
     }
   },
   "dependencies": {
+    "eslint-plugin-vue": "^10.7.0",
     "unplugin": "^2.2.2",
     "unplugin-utils": "^0.2.4"
   },
@@ -94,7 +101,6 @@
     "@babel/parser": "^7.27.0",
     "@babel/types": "^7.27.0",
     "@ljcl/storybook-addon-cssprops": "^4.0.0",
-    "@nuxt/kit": "^3.16.2",
     "@nuxt/schema": "^3.16.2",
     "@storybook/addon-designs": "^8.2.1",
     "@storybook/addon-essentials": "^8.6.11",
@@ -110,25 +116,28 @@
     "@types/node": "^22.13.11",
     "@types/react": "^19.0.12",
     "@vitejs/plugin-vue": "^5.2.3",
-    "@vue-macros/common": "3.0.0-beta.7",
+    "@vue-macros/common": "3.1.2",
     "@vue/compiler-core": "^3.5.13",
+    "@vue/eslint-config-typescript": "^14.6.0",
     "@vueuse/core": "^13.1.0",
     "bumpp": "^10.1.0",
     "consola": "^3.4.2",
     "deepmerge": "^4.3.1",
     "eslint": "^9.23.0",
+    "postcss": "^8.5.6",
     "prettier": "^3.5.3",
     "prettier-plugin-organize-imports": "^4.1.0",
     "react": "^19.1.0",
     "storybook": "^8.6.11",
     "tsdown": "^0.6.9",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2",
+    "typescript": "^5.9.3",
     "vite": "^6.2.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9",
     "vue": "^3.5.13",
-    "vue-component-meta": "^2.2.8"
+    "vue-component-meta": "^3.2.4",
+    "vue-component-type-helpers": "^3.2.4"
   },
   "engines": {
     "node": ">=18.12.0"
