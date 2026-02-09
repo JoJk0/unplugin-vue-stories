@@ -3,10 +3,8 @@ import { createReusableTemplate } from '@vueuse/core'
 import Stories from '../src/core/Stories.vue'
 import Story from '../src/core/Story.vue'
 import Counter from './Counter.vue'
-import CounterMeta from './Counter.vue?meta'
 
-console.log(CounterMeta)
-// import type { ComponentProps, ComponentSlots } from 'vue-component-type-helpers'
+import type { ComponentProps, ComponentSlots } from 'vue-component-type-helpers'
 
 defineMeta({
   parameters: {
@@ -20,12 +18,10 @@ defineMeta({
   },
 })
 
-// const [DefineCounterStory, CounterStory] = createReusableTemplate<
-//   ComponentProps<typeof Counter>,
-//   ComponentSlots<typeof Counter>
-// >()
-
-const [DefineCounterStory, CounterStory] = createReusableTemplate()
+const [DefineCounterStory, CounterStory] = createReusableTemplate<
+  ComponentProps<typeof Counter>,
+  ComponentSlots<typeof Counter>
+>()
 </script>
 
 <template>

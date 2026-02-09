@@ -20,8 +20,12 @@ export function parse(code: string): {
 
   const resolvedScript =
     descriptor.script || descriptor.scriptSetup
-      ? compileScript(descriptor, { id: 'test' })
+      ? compileScript(descriptor, {
+          id: 'test',
+          babelParserPlugins: ['typescript'],
+        })
       : undefined
+
   const { meta, stories } = parseTemplate(descriptor.template.content)
   const docsBlock = descriptor.customBlocks?.find(
     (block) => block.type === 'docs',

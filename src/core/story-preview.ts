@@ -54,6 +54,9 @@ const isUnusedSelector = (msg: Linter.LintMessage) =>
   msg.ruleId?.includes('no-unused-selector') &&
   !msg.fix
 
+/**
+ * Transforms `*.stories.vue` Storybook Stories SFC file into a linted and formatted `*.vue` Vue component preview taken from the default story.
+ */
 export async function transform(
   code: string,
   id: string,

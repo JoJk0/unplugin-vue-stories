@@ -48,16 +48,22 @@ export async function transformSuperVue({
   additionalMeta,
   scriptBindings,
   options,
+  isTS,
 }: {
   stories: string
   id: string
   additionalMeta?: string
   scriptBindings: BindingMetadata | undefined
   options?: Options
+  isTS?: boolean
 }): Promise<string | CodeTransform | undefined> {
   if (!stories) return stories
 
-  const ast = babelParse(stories)
+  const ast = babelParse(
+    stories,
+    isTS ? 'ts' : undefined,
+    isTS ? { plugins: ['typescript'] } : undefined,
+  )
 
   const s = new MagicStringAST(stories)
 
@@ -133,12 +139,12 @@ function hoistBindings({
     ),
   )
 
-  bindings.forEach((binding) => {
-    if (!Object.keys(toHoist).includes(binding))
-      throw new Error(
-        `[unplugin-super-vue]: Binding "${binding}" is not primitive and cannot be used as a story arg.`,
-      )
-  })
+  // bindings.forEach((binding) => {
+  //   if (!Object.keys(toHoist).includes(binding))
+  //     throw new Error(
+  //       `[unplugin-super-vue]: Binding "${binding}" is not primitive and cannot be used as a story arg.`,
+  //     )
+  // })
 
   const _sfc_main = ast.body.find(
     (node): node is VariableDeclaration =>
@@ -291,8 +297,59 @@ async function transformStory(
   )
   if (!renderFn) return
 
+  const setupRefs = new Map<string, string>()
+
+  const setupBody = (
+    (
+      ast.body?.find(
+        (node): node is VariableDeclaration =>
+          node.type === 'VariableDeclaration' &&
+          node.declarations.some(
+            (decl) =>
+              decl.id.type === 'Identifier' &&
+              decl.id.name === '_sfc_main' &&
+              decl.init?.type === 'CallExpression' &&
+              decl.init.arguments[0].type === 'ObjectExpression' &&
+              decl.init.arguments[0].properties.some(
+                (prop): prop is ObjectMethod =>
+                  prop.type === 'ObjectMethod' &&
+                  prop.key.type === 'Identifier' &&
+                  prop.key.name === 'setup',
+              ),
+          ),
+      )?.declarations[0]?.init as CallExpression
+    )?.arguments[0] as ObjectExpression
+  )?.properties.find(
+    (prop): prop is ObjectMethod =>
+      prop.type === 'ObjectMethod' &&
+      prop.key.type === 'Identifier' &&
+      prop.key.name === 'setup',
+  )?.body
+
+  // extract all refs value from setup body and add them to bindings so that they can be hoisted properly
+  traverse(setupBody!, {
+    enter(node) {
+      if (
+        node.type === 'VariableDeclaration' &&
+        node.declarations.some(
+          (decl) =>
+            decl.init?.type === 'CallExpression' &&
+            decl.init.callee.type === 'Identifier' &&
+            decl.init.callee.name === 'ref' &&
+            decl.id.type === 'Identifier',
+        )
+      ) {
+        const refName = (node.declarations[0].id as Identifier).name
+        const refValue = (node.declarations[0].init as CallExpression)
+          .arguments[0]
+
+        setupRefs.set(refName, stories.slice(refValue.start!, refValue.end!))
+      }
+    },
+  })
+
   const { renderReturnTransformed, renderReturnArgsStrCamel } =
-    transformRenderReturnFn({ renderFn, stories, bindings })
+    transformRenderReturnFn({ renderFn, stories, bindings, setupRefs })
 
   s.overwriteNode(
     arrowFn,
@@ -320,10 +377,12 @@ function transformRenderReturnFn({
   renderFn,
   stories,
   bindings,
+  setupRefs,
 }: {
   stories: string
   renderFn: FunctionDeclaration
   bindings: Set<string>
+  setupRefs: Map<string, string>
 }) {
   const renderReturnAst = renderFn.body.body.find(
     (node): node is ReturnStatement => node.type === 'ReturnStatement',
@@ -377,16 +436,32 @@ function transformRenderReturnFn({
           ((prop as ObjectProperty).key as StringLiteral).value ??
           ((prop as ObjectProperty).key as Identifier).name
 
-        const value = stories
-          .slice(
-            (prop as ObjectProperty).value.start!,
-            (prop as ObjectProperty).value.end!,
-          )
-          .replaceAll('$setup.', '')
+        const isFromSetup =
+          prop.type === 'ObjectProperty' &&
+          prop.value.type === 'MemberExpression' &&
+          prop.value.object.type === 'Identifier' &&
+          prop.value.object.name === '$setup'
+        const valueRaw = stories.slice(
+          (prop as ObjectProperty).value.start!,
+          (prop as ObjectProperty).value.end!,
+        )
+
+        const isInternal = valueRaw.includes('_cache')
+
+        if (isInternal)
+          return {
+            renderReturnArgsStrReplace: `${acc.renderReturnArgsStrReplace}'${key}': args['${toCamelCase(key)}'],`,
+            renderReturnArgsStrCamel: acc.renderReturnArgsStrCamel,
+          }
+
+        const value =
+          isFromSetup && setupRefs.get(toCamelCase(key))
+            ? setupRefs.get(toCamelCase(key))
+            : valueRaw.replaceAll('$setup.', '')
 
         return {
-          renderReturnArgsStrReplace: `${acc.renderReturnArgsStrReplace}'${key}': args.${toCamelCase(key)},`,
-          renderReturnArgsStrCamel: `${acc.renderReturnArgsStrCamel}${toCamelCase(key)}: ${value},`,
+          renderReturnArgsStrReplace: `${acc.renderReturnArgsStrReplace}'${key}': args['${toCamelCase(key)}'],`,
+          renderReturnArgsStrCamel: `${acc.renderReturnArgsStrCamel}"${toCamelCase(key)}": ${value},`,
         }
       },
       { renderReturnArgsStrReplace: '', renderReturnArgsStrCamel: '' },
@@ -637,6 +712,7 @@ export async function transform(
   options?: Options,
 ): Promise<string | CodeTransform | undefined> {
   // console.log('transforming', id)
+
   const {
     meta: additionalMeta,
     trimmedCode,
@@ -652,9 +728,27 @@ export async function transform(
       : (codeWithExtraTemplate?.code ?? trimmedCode),
   )
   const isTS = resolvedScript?.lang === 'ts'
+
   if (resolvedScript) {
     const babelPlugins: ParserPlugin[] = isTS ? ['typescript'] : []
-    result += rewriteDefault(resolvedScript.content, '_sfc_main', babelPlugins)
+
+    let content: string
+
+    if (isTS) {
+      const { transpileModule, ScriptTarget, ModuleKind } = await import(
+        'typescript'
+      )
+      content = transpileModule(resolvedScript.content, {
+        compilerOptions: {
+          target: ScriptTarget.ESNext,
+          module: ModuleKind.ESNext,
+        },
+      }).outputText
+    } else {
+      content = resolvedScript.content
+    }
+
+    result += rewriteDefault(content, '_sfc_main', babelPlugins)
     result += '\n'
   } else {
     result += 'const _sfc_main = {}\n'
@@ -670,6 +764,7 @@ export async function transform(
     additionalMeta,
     scriptBindings,
     options,
+    isTS,
   })
 }
 
