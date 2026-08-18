@@ -223,8 +223,8 @@ function transformMeta({
 
   if (!parameters || !title) return
 
-  const modelsArgTypes = `{ argTypes: ${componentExportName}.__docgenInfo.events?.filter(event => event.name.startsWith('update:')).reduce((acc, { name }) => ({ ...acc, [name.replace('update:', '')]: { description: ${componentExportName}.models?.find(model => model.name === name.replace('update:', ''))?.description, table: { category: 'models', defaultValue: { summary: ${componentExportName}.models?.find(model => model.name === name.replace('update:', ''))?.default } } }, [name]: { table: { disable: true } } }), {}) },`
-  const slotsArgTypes = `{ argTypes: ${componentExportName}.__docgenInfo.slots?.reduce((acc, { name }) => ({ ...acc, [name]: { control: 'text', type: 'VNode[]' } }), {}) },`
+  const modelsArgTypes = `{ argTypes: ${componentExportName}.__docgenInfo?.events?.filter(event => event.name.startsWith('update:')).reduce((acc, { name }) => ({ ...acc, [name.replace('update:', '')]: { description: ${componentExportName}.models?.find(model => model.name === name.replace('update:', ''))?.description, table: { category: 'models', defaultValue: { summary: ${componentExportName}.models?.find(model => model.name === name.replace('update:', ''))?.default } } }, [name]: { table: { disable: true } } }), {}) },`
+  const slotsArgTypes = `{ argTypes: ${componentExportName}.__docgenInfo?.slots?.reduce((acc, { name }) => ({ ...acc, [name]: { control: 'text', type: 'VNode[]' } }), {}) },`
   const removeTrashArgTypes = `{ argTypes: { $: { table: { disable: true } }, $slots: { table: { disable: true } } } },`
 
   const design = options?.design
